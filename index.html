@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <title>Web AR Museum</title>
+  <link rel="stylesheet" href="/src/style.css" />
+
+  <!--
+    mind-ar's three.js bundle imports the bare specifiers "three" and
+    "three/addons/...". There's no bundler in this project (everything is
+    loaded straight from a CDN so the app has zero native build
+    dependencies), so the browser needs an import map to resolve those bare
+    specifiers itself. Versions are pinned so mind-ar and three never drift
+    out of sync with each other.
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- Upload screen -->
+    <section id="upload-screen" class="screen">
+      <header class="app-header">
+        <h1>Web AR Museum</h1>
+        <p>Pick an image and a video. Point your camera at the image to play the video on top of it.</p>
+      </header>
+
+      <form id="upload-form">
+        <label class="field">
+          <span class="field-label">1. Target image</span>
+          <span class="field-hint">A flat, detailed, high-contrast image tracks best (a poster, photo or painting).</span>
+          <input type="file" id="image-input" accept="image/png,image/jpeg,image/webp" required />
+          <div class="preview" id="image-preview" hidden>
+            <img id="image-preview-img" alt="Selected target image preview" />
+          </div>
+        </label>
+
+        <label class="field">
+          <span class="field-label">2. Video to project</span>
+          <span class="field-hint">Plays on a loop, mapped onto the tracked image.</span>
+          <input type="file" id="video-input" accept="video/mp4,video/webm,video/quicktime" required />
+          <div class="preview" id="video-preview" hidden>
+            <video id="video-preview-el" controls playsinline preload="metadata"></video>
+          </div>
+        </label>
+
+        <button type="submit" id="start-btn" disabled>Start AR</button>
+      </form>
+
+      <p class="error" id="error-message" hidden></p>
+
+      <footer class="app-footer">
+        <p>Needs camera access over HTTPS (or localhost). Works in Chrome on Android and Safari on iOS 13+.</p>
+      </footer>
+    </section>
+
+    <!-- Loading / compiling overlay -->
+    <section id="loading-screen" class="screen" hidden>
+      <div class="loading-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="loading-text">Preparing target image&hellip;</p>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AR screen -->
+    <section id="ar-screen" class="screen" hidden>
+      <div id="ar-container"></div>
+
+      <div class="ar-hint" id="ar-hint">Point the camera at your image</div>
+
+      <div class="ar-controls">
+        <button type="button" id="unmute-btn" class="pill-btn" hidden>Unmute</button>
+        <button type="button" id="stop-btn" class="pill-btn pill-btn-danger">Stop</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

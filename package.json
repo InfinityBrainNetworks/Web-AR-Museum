@@ -1,0 +1,16 @@
+{
+  "name": "web-ar-museum",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Web AR app: upload an image and a video, then track the image with your camera to project the video onto it in real time.",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11",
+    "@vitejs/plugin-basic-ssl": "^1.1.0"
+  }
+}
