@@ -39,7 +39,7 @@
         <label class="field">
           <span class="field-label">1. Target image</span>
           <span class="field-hint">A flat, detailed, high-contrast image tracks best (a poster, photo or painting).</span>
-          <input type="file" id="image-input" accept="image/png,image/jpeg,image/webp" required />
+          <input type="file" id="image-input" accept="image/*" required />
           <div class="preview" id="image-preview" hidden>
             <img id="image-preview-img" alt="Selected target image preview" />
           </div>
@@ -48,7 +48,7 @@
         <label class="field">
           <span class="field-label">2. Video to project</span>
           <span class="field-hint">Plays on a loop, mapped onto the tracked image.</span>
-          <input type="file" id="video-input" accept="video/mp4,video/webm,video/quicktime" required />
+          <input type="file" id="video-input" accept="video/*" required />
           <div class="preview" id="video-preview" hidden>
             <video id="video-preview-el" controls playsinline preload="metadata"></video>
           </div>

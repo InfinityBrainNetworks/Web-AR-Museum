@@ -72,6 +72,7 @@ function updateStartEnabled() {
 els.imageInput.addEventListener("change", () => {
   const file = els.imageInput.files[0];
   setError(null);
+  if (file) console.log("Selected image:", file.name, file.type, file.size, "bytes");
   if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
   if (file) {
     imagePreviewUrl = URL.createObjectURL(file);
@@ -99,14 +100,29 @@ els.videoInput.addEventListener("change", () => {
 
 // --- Helpers ---------------------------------------------------------------
 
-function loadImage(file) {
+// createImageBitmap decodes straight from the File/Blob (no object URL
+// needed) and handles a wider range of real-world phone photos — including
+// EXIF-rotated JPEGs and formats some browsers' <img> tag chokes on — more
+// reliably than the <img>+object-URL route. It's supported in every current
+// mobile browser, but we still fall back to <img> for older ones.
+async function loadImage(file) {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file);
+      return { img: bitmap, url: null };
+    } catch (err) {
+      console.warn("createImageBitmap failed, falling back to <img>:", err);
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => resolve({ img, url });
-    img.onerror = () => {
+    img.onerror = (event) => {
       URL.revokeObjectURL(url);
-      reject(new Error("Could not read that image file."));
+      console.error("Image failed to decode:", file.type, file.name, event);
+      reject(new Error(`Could not read that image (${file.type || "unknown type"}). Try a JPEG or PNG.`));
     };
     img.src = url;
   });
@@ -117,13 +133,16 @@ function loadImage(file) {
 // (which the compiler can read via drawImage, same as an <img>) plus the
 // final width/height used for the AR plane's aspect ratio.
 function toProcessCanvas(img) {
-  const scale = Math.min(1, MAX_TARGET_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
-  const width = Math.round(img.naturalWidth * scale);
-  const height = Math.round(img.naturalHeight * scale);
+  const naturalWidth = img.naturalWidth || img.width;
+  const naturalHeight = img.naturalHeight || img.height;
+  const scale = Math.min(1, MAX_TARGET_DIMENSION / Math.max(naturalWidth, naturalHeight));
+  const width = Math.round(naturalWidth * scale);
+  const height = Math.round(naturalHeight * scale);
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+  if (typeof img.close === "function") img.close(); // release the ImageBitmap
   return { canvas, width, height };
 }
 
