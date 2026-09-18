@@ -150,17 +150,59 @@ function loadVideoElement(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
-    video.src = url;
     video.loop = true;
     video.playsInline = true;
     video.setAttribute("playsinline", "");
-    video.crossOrigin = "anonymous";
     video.preload = "auto";
-    video.addEventListener("loadeddata", () => resolve({ video, url }), { once: true });
-    video.addEventListener("error", () => {
+
+    // Some mobile browsers barely load media elements that aren't attached
+    // to the document — metadata events can stall indefinitely on a
+    // detached <video>, which is what left this stuck on "Finishing up".
+    // Kept out of the layout (not display:none, which itself can pause a
+    // video used as a texture) rather than truly hidden.
+    video.style.position = "fixed";
+    video.style.width = "1px";
+    video.style.height = "1px";
+    video.style.opacity = "0";
+    video.style.pointerEvents = "none";
+    document.body.appendChild(video);
+
+    let settled = false;
+    const cleanup = () => {
+      video.removeEventListener("loadedmetadata", onReady);
+      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("canplay", onReady);
+      video.removeEventListener("error", onError);
+      clearTimeout(timeoutId);
+    };
+    const onReady = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve({ video, url });
+    };
+    const onError = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      video.remove();
       URL.revokeObjectURL(url);
-      reject(new Error("Could not read that video file."));
-    }, { once: true });
+      console.error("Video failed to load:", file.type, file.name, video.error);
+      reject(new Error(`Could not read that video (${file.type || "unknown type"}). Try an MP4 (H.264) file.`));
+    };
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      console.warn("Video metadata timed out after 15s, readyState:", video.readyState);
+      onError();
+    }, 15000);
+
+    video.addEventListener("loadedmetadata", onReady);
+    video.addEventListener("loadeddata", onReady);
+    video.addEventListener("canplay", onReady);
+    video.addEventListener("error", onError);
+
+    video.src = url;
+    video.load();
   });
 }
 
@@ -209,6 +251,7 @@ els.form.addEventListener("submit", async (event) => {
     console.error(err);
     if (compiledMindUrl) URL.revokeObjectURL(compiledMindUrl);
     if (videoUrl) URL.revokeObjectURL(videoUrl);
+    if (video) video.remove();
     showScreen("uploadScreen");
     els.startBtn.disabled = false;
     setError(err && err.message ? err.message : "Something went wrong starting AR. Please try again.");
